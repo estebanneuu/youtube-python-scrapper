@@ -1,28 +1,33 @@
+import argparse
 import os
 import json
-from contextlib import redirect_stdout
-
+from typing import List
+import asyncio
 import requests as rq
 from bs4 import BeautifulSoup as bs
 import re
 from dataclasses import dataclass
-import pandas as pd
+from requests_html import HTMLSession, AsyncHTMLSession
 
+import aiohttp
+
+HEADERS = {'User-Agent': 'Mozilla/5.0'}
 
 @dataclass
 class Video:
     id: int
     title: str
     author: str
+    likes: str
     description: str
-    urls: str
-    timestamps: str
+    urls: list
+    timestamps: list
 
 
 def write_json(table, output_name):
     with open(output_name, 'w') as ou:
-        for i in table:
-            json.dump(i.__dict__, ou)
+        for video in table:
+            json.dump(video.__dict__, ou)
 
 
 def read_json(filename):
@@ -40,24 +45,49 @@ def extract_timestamps(string):
     return timestamps
 
 
-def parse_video(video_id):
+def extract_args():
+    parser = argparse.ArgumentParser()  # on crée un objet parser
+    parser.add_argument('--input', help='Input JSON file with video IDs',
+                        required=True)
+    parser.add_argument('--output', help='Output JSON file with parsed datas',
+                        required=True)
+    args = parser.parse_args()
+    argdict = vars(args)
+    input_parameter = argdict['input']
+    output_parameter = argdict['output']
+    return input_parameter, output_parameter
+
+
+async def get_html(url):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, headers=HEADERS) as resp:
+            return await resp.text()
+
+
+async def parse_video(video_id):
     video_url = "https://www.youtube.com/watch?v=" + video_id
-    soup = bs(rq.get(video_url).text, "html.parser")
+    session = HTMLSession()
+    response = session.get(video_url)
+    response.html.render(sleep=3)
+
+    soup = bs(response.html.html, "lxml")
     div_s = soup.findAll('div')
+
     video_title = div_s[0].find("meta", {"itemprop": "name"}).get("content")
     video_author = div_s[0].find("link", {"itemprop": "name"}).get("content")
     video_description = re.compile('(?<=shortDescription":").*(?=","isCrawlable)').findall(str(soup))[0].replace('\\n',
                                                                                                                  '\n')
     urls = extract_urls(video_description)
     timestamps = extract_timestamps(video_description)
+    likes = soup.select_one('button.yt-spec-button-shape-next--icon-leading > '
+                            '.yt-spec-button-shape-next--button-text-content > span.yt-core-attributed-string').contents
     return Video(id=video_id, title=video_title, author=video_author, description=video_description, urls=urls,
-                 timestamps=timestamps)
-    write_json()
+                 timestamps=timestamps, likes=likes)
 
 
-l = []
+extract_args()
+l: List[Video] = []
 videos = read_json("input.json")
 for i in videos:
     l.append(parse_video(i))
-print(l[0].id)
-write_json(l, "out.json")
+write_json(l, "output.json")
