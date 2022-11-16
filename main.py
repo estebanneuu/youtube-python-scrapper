@@ -1,16 +1,18 @@
-# This is a sample Python script.
-
-# Press Maj+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
-
-
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
-
-
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+import os
+import json
+import requests
+from bs4 import BeautifulSoup
+import re
+url = "https://www.youtube.com/watch?v=JwSCjUaa3DU"
+Vid = {}
+Link = url
+source= requests.get(url).text
+soup = BeautifulSoup(source, 'lxml')
+div_s = soup.findAll('div')
+Title = div_s[0].find("meta",{"itemprop":"name"}).get("content")
+Author = div_s[0].find("link",{"itemprop":"name"}).get("content")
+pattern = re.compile('(?<=shortDescription":").*(?=","isCrawlable)')
+description = pattern.findall(str(soup))[0].replace('\\n','\n')
+print(description)
+print(Title)
+print(Author)
