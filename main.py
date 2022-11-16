@@ -6,6 +6,7 @@ import requests as rq
 from bs4 import BeautifulSoup as bs
 import re
 from dataclasses import dataclass
+import pandas as pd
 
 
 @dataclass
@@ -18,7 +19,8 @@ class Video:
 
 def write_json(table, outputname):
     with open(outputname, 'w') as ou:
-        json.dump(table, ou)
+        for i in table:
+            json.dump(i.__dict__, ou)
 
 
 def read_json(filename):
@@ -36,8 +38,11 @@ def parse_video(video_id):
     video_description = re.compile('(?<=shortDescription":").*(?=","isCrawlable)').findall(str(soup))[0].replace('\\n',
                                                                                                                  '\n')
     return Video(id=video_id, title=video_title, author=video_author, description=video_description)
+    write_json()
 
-
+l = []
 videos = read_json("input.json")
 for i in videos:
-    print(parse_video(i))
+    l.append(parse_video(i))
+print(l[0].id)
+write_json(l,"out.json")
