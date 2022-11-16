@@ -1,0 +1,7 @@
+argparse
+json
+typing
+bs4
+re
+dataclasses
+requests_html
