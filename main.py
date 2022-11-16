@@ -2,10 +2,10 @@ import os
 import json
 from contextlib import redirect_stdout
 
-import requests
-from bs4 import BeautifulSoup
+import requests as rq
+from bs4 import BeautifulSoup as bs
 import re
-import dataclass
+from dataclasses import dataclass
 @dataclass
 class Video:
     id : int
@@ -13,12 +13,21 @@ class Video:
     author : str
     description : str
 
+def write_json(table,outputname):
+    with open(outputname,'w') as ou:
+        json.dump(table,ou)
+def read_json(filename):
+    with open(filename,'r') as input:
+        return 1
+
+def parse_vide(video_id):
+    url = "https://www.youtube.com/watch?v="+video_id
+    soup = bs(rq.get(url).text,"html.parser")
+
 
 url = "https://www.youtube.com/watch?v=JwSCjUaa3DU"
-Vid = {}
-Link = url
 source = requests.get(url).text
-soup = BeautifulSoup(source, 'html.parser')
+soup = bs(source, 'html.parser')
 div_s = soup.findAll('div')
 span_s = soup.findAll('span')
 Title = div_s[0].find("meta",{"itemprop":"name"}).get("content")
